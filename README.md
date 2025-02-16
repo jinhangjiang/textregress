@@ -1,3 +1,5 @@
+[![PyPI](https://img.shields.io/pypi/v/textregress)](https://pypi.org/project/textregress/)
+[![Downloads](https://pepy.tech/badge/textregress)](https://pepy.tech/project/textregress)
 # TextRegress
 
 TextRegress is a Python package designed to help researchers perform linear regression analysis on text data. It supports:
