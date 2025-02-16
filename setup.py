@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="TextRegress",
+    name="textregress",
     version="1.0.0",
     description="A package for performing linear regression on text data using configurable encoders and deep learning.",
     author="Jinhang Jiang, Weiyao Peng, Karthik Srinivasan",
