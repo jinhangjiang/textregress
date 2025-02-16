@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "TextRegress"
+version = "1.0.0"
+description = "A Python package for performing linear regression analysis on text data."
+readme = "README.md"
+license = { text = "MIT License" }
+requires-python = ">=3.6"
+keywords = ["text", "predictive NLP", "machine learning", "NLP", "linear regression"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+]
+dependencies = [
+    "pandas==1.5.3",
+    "numpy==1.23.5",
+    "scikit-learn==1.2.2",
+    "tqdm==4.64.1",
+    "torch==2.0.1",
+    "pytorch-lightning==2.0.2",
+    "sentence-transformers==2.2.2",
+    "transformers==4.27.0"
+]
+
+[project.urls]
+Homepage = "https://github.com/jinhangjiang/textregress"
+Repository = "https://github.com/jinhangjiang/textregress"
+
+[tool.setuptools]
+# If your source code lives in a subfolder, e.g. "src", adjust the package-dir accordingly.
+package-dir = { "" = "." }
+packages = ["textregress"]
+
+[tool.setuptools.package-data]
+"TextRegress" = ["py.typed"]
