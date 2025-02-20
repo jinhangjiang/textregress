@@ -4,12 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "textregress"
-version = "1.0.0"
-description = "A Python package for performing linear regression analysis on text data."
+version = "1.1.0"
+description = "A package for performing advanced regression on text data using unified deep learning framework."
 readme = "README.md"
 license = { text = "MIT License" }
 requires-python = ">=3.6"
-keywords = ["text", "predictive NLP", "machine learning", "NLP", "linear regression"]
+keywords = ["text", "predictive nlp", "machine learning", "nlp", "advanced regression", "deep learning"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Science/Research",
@@ -30,7 +30,8 @@ dependencies = [
     "torch==2.0.1",
     "pytorch-lightning==2.0.2",
     "sentence-transformers==2.2.2",
-    "transformers==4.27.0"
+    "transformers==4.27.0",
+    "huggingface-hub==0.25.2"
 ]
 
 [project.urls]

@@ -6,3 +6,4 @@ torch~=2.0.1
 pytorch-lightning~=2.0.2
 sentence-transformers~=2.2.2
 transformers~=4.27.0
+huggingface-hub~=0.25.2

@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Version 1.1.0] - 2025-02-19
+
+### Added
+- **Dynamic Optimizer Support:**  
+  The `configure_optimizers` method now dynamically searches through `torch.optim` to support any optimizer available in PyTorch. Users can now specify the optimizer by name (e.g., "adam", "sgd", etc.) along with custom optimizer parameters without modifying the source code.
+  
+- **Random Seed Parameter:**  
+  A new `random_seed` parameter (default: 1) has been added to both the estimator and model. This parameter sets the seed for Python’s `random` module, NumPy, and PyTorch to ensure reproducibility across runs.
+
+- **Dropout Layers:**  
+  Dropout layers have been integrated after every major component of the model (after the RNN output, global token generation, inference layers, and SE block) to improve generalization. Users can control the dropout rate using the `dropout_rate` parameter (default: 0.0).
+
+- **Cross-Attention Mechanism:**  
+  An optional cross-attention mechanism has been added to enhance the integration of exogenous features. When enabled via `cross_attention_enabled`, the model:
+  - Generates a global token by averaging RNN outputs.
+  - Projects exogenous features and applies cross attention between the global token and these features.
+  - Concatenates the cross-attention output with the RNN’s final output before the inference layer.
+  
+  Users can also provide a custom cross-attention layer using `cross_attention_layer`.
+
+- **Squeeze-and-Excitation (SE) Block:**  
+  An optional SE block has been incorporated to further recalibrate channel-wise features and boost model performance. This can be enabled or disabled via the `se_layer` parameter (default: True).
+
+### Changed
+- **Model Architecture Enhancements:**  
+  The overall architecture of the model has been updated to integrate dropout, cross-attention, and an SE block. This makes the model more robust and flexible for various regression tasks on text data.
+  
+- **Enhanced Parameterization and Documentation:**  
+  Both the estimator and model now expose additional parameters (such as optimizer customization, random seed, dropout rate, cross-attention options, and SE block control), with improved inline documentation to facilitate ease of use and future maintenance.
+
+### Summary
+Version 1.1.0 of TextRegress introduces significant enhancements that empower users with greater flexibility and reproducibility. With dynamic optimizer support, a reproducibility mechanism via the random seed parameter, and architectural improvements including dropout, cross-attention, and a squeeze-and-excitation block, this update positions TextRegress as a more robust and adaptable tool for regression analysis on text data.
+
+
 ## [Version 1.0.0] - 2025-02-15
 
 ### Added
