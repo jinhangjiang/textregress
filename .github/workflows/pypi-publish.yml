@@ -3,7 +3,7 @@ name: Publish to PyPI
 on:
   push:
     tags:
-      - 'v1.0.0'  # Trigger this workflow when a version tag is pushed (e.g., v1.0.0)
+      - 'v1.1.0'  # Trigger this workflow when a version tag is pushed (e.g., v1.0.0)
 
 jobs:
   build-and-publish:
