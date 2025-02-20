@@ -1,9 +1,11 @@
 [![PyPI](https://img.shields.io/pypi/v/textregress)](https://pypi.org/project/textregress/)
 [![Downloads](https://pepy.tech/badge/textregress)](https://pepy.tech/project/textregress)
+
+
 # TextRegress
 
-TextRegress is a Python package designed to help researchers perform linear regression analysis on text data. It supports:
-- Configurable text encoding using SentenceTransformer or custom methods (e.g., TFIDF).
+TextRegress is a Python package designed to help researchers perform advanced regression analysis on text data. It provides a unified deep learning framework to handle long-text data and supports:
+- Configurable text encoding using SentenceTransformer or custom methods (e.g., TFIDF). Or, any pretrained Hugging Face models. 
 - Automatic text chunking for long documents.
 - A deep learning backend based on PyTorch Lightning with RNN (LSTM/GRU) layers.
 - Integration of exogenous features through standard normalization and attention mechanisms.
@@ -23,6 +25,116 @@ You may also install it through pypi:
 
 ```python
 pip install textregress
+```
+
+## Implementation
+
+TextRegress Model (
+    rnn_type, 
+    rnn_layers, 
+    hidden_size, 
+    bidirectional, 
+    inference_layer_units, 
+    exogenous_features=None, 
+    learning_rate: float, 
+    loss_function: str, 
+    encoder_output_dim: int, 
+    optimizer_name: str, 
+    optimizer_params: dict=None, 
+    cross_attention_enabled: bool=False, 
+    cross_attention_layer: Optional[nn.Module]=None, 
+    dropout_rate: float=0.0, 
+    se_layer: bool=True, 
+    random_seed: int=1
+)
+
+**Parameters:**
+
+- **rnn_type**: *str*  
+  Specifies the type of recurrent unit to use. Acceptable values include `"LSTM"` and `"GRU"`. This choice determines the basic building block of the temporal processing module.
+
+- **rnn_layers**: *int*  
+  The number of stacked RNN layers in the model. More layers can capture higher-order temporal features but may require more data and computation.
+
+- **hidden_size**: *int*  
+  The number of hidden units in each RNN layer. This parameter defines the dimensionality of the hidden state and directly influences the model’s capacity.
+
+- **bidirectional**: *bool*  
+  When set to `True`, the RNN operates in a bidirectional manner, processing the sequence in both forward and backward directions. This effectively doubles the output dimension of the RNN.
+
+- **inference_layer_units**: *int*  
+  The number of units in the intermediate inference (fully connected) layer. This layer transforms the processed features into a representation suitable for the final regression output.
+
+- **exogenous_features**: *Optional[List[str]]*  
+  A list of column names representing additional (exogenous) features to be incorporated into the model. These features are first projected to match the RNN output dimension and can be integrated via a cross-attention mechanism if enabled.
+
+- **learning_rate**: *float*  
+  The learning rate used by the optimizer during training. This controls how quickly the model weights are updated.
+
+- **loss_function**: *str*  
+  Specifies the loss function for training. Supported options include `"mae"`, `"mse"`, `"rmse"`, `"smape"`, `"wmape"`, and `"mape"`.
+
+- **encoder_output_dim**: *int*  
+  The dimensionality of the vector output from the encoder module. This value is used to configure the input size of the RNN.
+
+- **optimizer_name**: *str*  
+  The name of the optimizer to be used (e.g., `"adam"`, `"sgd"`, etc.). The model dynamically searches within PyTorch’s optimizers to instantiate the specified optimizer.
+
+- **optimizer_params**: *dict*  
+  A dictionary containing additional keyword parameters to pass to the optimizer upon instantiation (for example, momentum for SGD).
+
+- **cross_attention_enabled**: *bool*  
+  A flag indicating whether to enable a cross-attention mechanism. When `True`, the model generates a global token (by averaging the RNN outputs) and uses it as the query to attend over the projected exogenous features. The output of this attention is concatenated with the RNN’s last time-step output before further processing.
+
+- **cross_attention_layer**: *Optional[nn.Module]*  
+  An optional custom cross-attention layer. If not provided and cross attention is enabled, a default single-head MultiheadAttention layer (from `nn.MultiheadAttention`) is used.
+
+- **dropout_rate**: *float*  
+  The dropout rate applied after each major component (e.g., after the RNN output, global token generation, inference layers, cross-attention, and squeeze-and-excitation block). A value of 0.0 means no dropout is applied.
+
+- **se_layer**: *bool*  
+  Specifies whether to enable the squeeze-and-excitation (SE) block on the output of the inference layer. When enabled, the SE block recalibrates channel-wise feature responses, potentially enhancing model performance.
+
+- **random_seed**: *int*  
+  Sets the random seed for reproducibility. This value is used to initialize PyTorch (via `torch.manual_seed`), ensuring that training results are consistent across runs.
+
+---
+
+**Usage Example:**
+
+```python
+from textregress import TextRegressor
+
+# Instantiate the TextRegressor with non-default parameters for testing:
+regressor = TextRegressor(
+    encoder_model="sentence-transformers/all-MiniLM-L6-v2",  # Use a generic Hugging Face model
+    rnn_type="GRU",                     # Use GRU instead of LSTM
+    rnn_layers=2,                       # Use 2 RNN layers
+    hidden_size=100,                    # Hidden size set to 100
+    bidirectional=False,                # Unidirectional RNN
+    inference_layer_units=50,           # Inference layer with 50 units
+    chunk_info=(100, 25),                  # Chunk text into segments of 100 words with an overlap of 25 words
+    padding_value=0,                    # Padding value for chunks
+    exogenous_features=["ex1", "ex2"],  # Include two exogenous features
+    learning_rate=0.001,                # Learning rate of 0.001
+    loss_function="mae",                # MAE loss
+    max_steps=50,                       # Limit training to 50 steps (for demo purposes)
+    early_stop_enabled=True,            # Enable early stopping
+    patience_steps=5,                   # Early stopping patience of 2 steps
+    val_check_steps=2,                  # Validate every 2 training steps
+    optimizer_name="adam",              # Use Adam optimizer
+    cross_attention_enabled=True,       # Enable cross attention between a global token and exogenous features
+    cross_attention_layer=None,         # Use default cross attention layer (nn.MultiheadAttention with 1 head)
+    dropout_rate=0.1,                   # Apply dropout with a rate of 0.1 after each major component
+    se_layer=True                       # Enable the squeeze-and-excitation block
+)
+
+# Fit the model on the DataFrame.
+# Using a small batch size and reserving 50% of data for validation (for demo purposes).
+regressor.fit(df, val_size=0.2)
+
+# Predict on the same DataFrame.
+predictions = regressor.predict(df)
 ```
 
 ## Features
@@ -69,8 +181,5 @@ pip install textregress
 
 - **Dynamic Embedding Dimension Handling**  
   The model dynamically detects the encoder’s output dimension (e.g., 384 for `"sentence-transformers/all-MiniLM-L6-v2"`) and configures the RNN input accordingly.
-
-- **Extensive Testing Suite**  
-  Comprehensive tests ensure that utility functions, encoder types, and estimator functionality work as expected, making it easy to maintain and extend the package.
 
 
