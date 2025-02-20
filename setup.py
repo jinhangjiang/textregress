@@ -16,6 +16,7 @@ setup(
         "pytorch-lightning",
         "sentence-transformers",
         "transformers",
+        "huggingface-hub"
     ],
     python_requires=">=3.6",
 )
