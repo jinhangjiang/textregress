@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "TextRegress"
+name = "textregress"
 version = "1.1.0"
 description = "A package for performing advanced regression on text data using unified deep learning framework."
 readme = "README.md"
