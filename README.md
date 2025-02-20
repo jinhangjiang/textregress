@@ -130,7 +130,7 @@ regressor = TextRegressor(
 )
 
 # Fit the model on the DataFrame.
-# Using a small batch size and reserving 50% of data for validation (for demo purposes).
+# Using a small batch size and reserving 20% of data for validation (for demo purposes).
 regressor.fit(df, val_size=0.2)
 
 # Predict on the same DataFrame.
