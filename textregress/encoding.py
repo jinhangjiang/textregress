@@ -2,20 +2,24 @@ from sentence_transformers import SentenceTransformer
 from sklearn.feature_extraction.text import TfidfVectorizer
 import torch
 from transformers import AutoTokenizer, AutoModel
+import warnings
 
-def get_encoder(model_identifier):
+def get_encoder(model_identifier, **kwargs):
     """
     Factory function to obtain an encoder based on the model identifier.
     
     Args:
         model_identifier (str): Identifier for the encoding model.
+        **kwargs: Additional keyword arguments.
+                  For example, if model_identifier indicates TFIDF, these are passed
+                  to the TfidfVectorizer.
         
     Returns:
         An encoder object with an `encode` method.
     """
-    model_identifier_lower = model_identifier.lower()
+    model_identifier_lower = model_identifier.lower() if isinstance(model_identifier, str) else ""
     if "tfidf" in model_identifier_lower:
-        return TfidfEncoder()
+        return TfidfEncoder(**kwargs)
     elif "sentence-transformers" in model_identifier_lower:
         return SentenceTransformerEncoder(model_identifier)
     else:
@@ -47,10 +51,13 @@ class TfidfEncoder:
     
     Note:
         The TFIDF encoder must be fitted on the full text corpus before encoding chunks.
+        This version allows customization by accepting additional keyword arguments
+        that are passed to the underlying TfidfVectorizer.
     """
-    def __init__(self):
-        self.vectorizer = TfidfVectorizer()
+    def __init__(self, **kwargs):
+        self.vectorizer = TfidfVectorizer(**kwargs)
         self.fitted = False
+        self.output_dim = None
     
     def fit(self, texts):
         """
@@ -61,6 +68,7 @@ class TfidfEncoder:
         """
         self.vectorizer.fit(texts)
         self.fitted = True
+        self.output_dim = len(self.vectorizer.get_feature_names_out())
     
     def encode(self, text):
         """
@@ -70,11 +78,13 @@ class TfidfEncoder:
             text (str): The text to encode.
             
         Returns:
-            vector (ndarray): Encoded vector representation.
+            vector (torch.Tensor): Encoded vector representation.
         """
         if not self.fitted:
-            raise ValueError("TFIDF encoder has not been fitted yet.")
-        return self.vectorizer.transform([text]).toarray()[0]
+            warnings.warn("TFIDF encoder has not been fitted yet. Fitting on the provided text as fallback.")
+            self.fit([text])
+        encoded = self.vectorizer.transform([text]).toarray()[0]
+        return torch.tensor(encoded, dtype=torch.float32)
 
 class HuggingFaceEncoder:
     """

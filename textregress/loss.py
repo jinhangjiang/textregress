@@ -30,11 +30,14 @@ def get_loss_function(loss_name):
     Factory function to get the loss function.
     
     Args:
-        loss_name (str): One of "mae", "mse", "rmse", "smape", "mape", "wmape".
+        loss_name (str or callable): If a string, one of "mae", "mse", "rmse", "smape", "mape", "wmape".
+            If a callable is provided, it will be returned directly.
         
     Returns:
         A callable loss function.
     """
+    if callable(loss_name):
+        return loss_name
     loss_name = loss_name.lower()
     if loss_name == 'mae':
         return mae_loss

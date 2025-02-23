@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.1.1] - 2025-02-22
+
+### Added
+- **Custom TFIDF Parameters:**  
+  Users can now pass custom parameters via `encoder_params` to configure the TFIDF encoder (e.g., `max_features`, `ngram_range`).
+- **Custom Loss Function Support:**  
+  The estimator now accepts a custom loss function (as a callable). This loss function is automatically invoked with keyword arguments `pred` and `target`.
+- **Feature Mixer for Exogenous Features:**  
+  A new parameter `feature_mixer` allows mixing normalized exogenous features with the document embedding:
+  - When `feature_mixer = False`, normalized exogenous features are concatenated directly with the document embedding.
+  - When `feature_mixer = True`, the inference output from the document embedding is mixed with normalized exogenous features via an additional mixing layer before making predictions.
+
+### Changed
+- **TFIDF Encoder Enhancements:**  
+  - Automatically fits on the entire corpus if not already fitted.
+  - Converts output to a `torch.Tensor` with `float32` dtype.
+  - Dynamically sets its `output_dim` based on the fitted vocabulary size.
+- **Dynamic Encoder Output Dimension:**  
+  The model now uses the actual encoder output dimension (instead of a hardcoded 768) to configure the RNN.
+- **Exogenous Feature Handling:**  
+  Improved integration of exogenous features with two distinct pathways depending on `cross_attention_enabled` and `feature_mixer` settings.
+- **Loss Function Invocation:**  
+  The training and validation steps now pass the prediction and target values as keyword arguments (`pred` and `target`) to the loss function.
+
+### Fixed
+- **Runtime Dimension Mismatch:**  
+  Resolved errors such as "Expected 768, got X" by dynamically determining and using the proper encoder output dimension.
+- **Loss Function Integration:**  
+  Fixed issues where custom loss functions did not automatically pick up the correct inputs.
+
+
 ## [Version 1.1.0] - 2025-02-19
 
 ### Added

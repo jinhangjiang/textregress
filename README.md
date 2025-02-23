@@ -30,25 +30,34 @@ pip install textregress
 ## Implementation
 
 TextRegress Model (
-    rnn_type, 
-    rnn_layers, 
-    hidden_size, 
-    bidirectional, 
-    inference_layer_units, 
-    exogenous_features=None, 
-    learning_rate: float, 
-    loss_function: str, 
-    encoder_output_dim: int, 
-    optimizer_name: str, 
-    optimizer_params: dict=None, 
-    cross_attention_enabled: bool=False, 
-    cross_attention_layer: Optional[nn.Module]=None, 
-    dropout_rate: float=0.0, 
-    se_layer: bool=True, 
+    encoder_model,  
+    encoder_params=None,  
+    rnn_type,  
+    rnn_layers,  
+    hidden_size,  
+    bidirectional,  
+    inference_layer_units,  
+    exogenous_features=None,  
+    feature_mixer=False,  
+    learning_rate: float,  
+    loss_function: Union[str, Callable],  
+    encoder_output_dim: int,  
+    optimizer_name: str,  
+    optimizer_params: dict=None,  
+    cross_attention_enabled: bool=False,  
+    cross_attention_layer: Optional[nn.Module]=None,  
+    dropout_rate: float=0.0,  
+    se_layer: bool=True,  
     random_seed: int=1
 )
 
 **Parameters:**
+
+- **encoder_model**: *str*  
+  Specifies the pretrained encoder model to use. This can be a HuggingFace model identifier (e.g., `"sentence-transformers/all-MiniLM-L6-v2"`) or `"tfidf"` for a TFIDF-based encoder.
+
+- **encoder_params**: *Optional[dict]*  
+  A dictionary of additional parameters for configuring the encoder. For example, when using a TFIDF encoder, users can supply parameters such as `{"max_features": 1000, "ngram_range": (1, 2)}`. These parameters are passed directly to the underlying encoder.
 
 - **rnn_type**: *str*  
   Specifies the type of recurrent unit to use. Acceptable values include `"LSTM"` and `"GRU"`. This choice determines the basic building block of the temporal processing module.
@@ -66,16 +75,22 @@ TextRegress Model (
   The number of units in the intermediate inference (fully connected) layer. This layer transforms the processed features into a representation suitable for the final regression output.
 
 - **exogenous_features**: *Optional[List[str]]*  
-  A list of column names representing additional (exogenous) features to be incorporated into the model. These features are first projected to match the RNN output dimension and can be integrated via a cross-attention mechanism if enabled.
+  A list of column names representing additional (exogenous) features to be incorporated into the model.  
+  - When `cross_attention_enabled` is `True`, these features are projected to match the RNN output dimension and integrated via a cross-attention mechanism.  
+  - When `cross_attention_enabled` is `False` and `feature_mixer` is also `False`, the normalized exogenous features are directly concatenated with the document embedding.  
+  - When `feature_mixer` is `True`, the model first computes an inference output from the document embedding and then mixes in the normalized exogenous features via an additional mixing layer before making predictions.
+
+- **feature_mixer**: *bool*  
+  A flag to enable additional mixing of exogenous features. When set to `True`, the model mixes normalized exogenous features with the inference output of the document embedding via a dedicated linear layer. When `False`, the exogenous features are concatenated directly with the document embedding.
 
 - **learning_rate**: *float*  
   The learning rate used by the optimizer during training. This controls how quickly the model weights are updated.
 
-- **loss_function**: *str*  
-  Specifies the loss function for training. Supported options include `"mae"`, `"mse"`, `"rmse"`, `"smape"`, `"wmape"`, and `"mape"`.
+- **loss_function**: *Union[str, Callable]*  
+  Specifies the loss function for training. Supported string options include `"mae"`, `"mse"`, `"rmse"`, `"smape"`, `"wmape"`, and `"mape"`. Alternatively, users can provide a custom loss function as a callable. Custom loss functions must accept keyword arguments `pred` and `target`.
 
 - **encoder_output_dim**: *int*  
-  The dimensionality of the vector output from the encoder module. This value is used to configure the input size of the RNN.
+  The dimensionality of the vector output from the encoder module. This value is used to configure the input size of the RNN. For instance, when using a TFIDF encoder, this is automatically set based on the size of the fitted vocabulary.
 
 - **optimizer_name**: *str*  
   The name of the optimizer to be used (e.g., `"adam"`, `"sgd"`, etc.). The model dynamically searches within PyTorch’s optimizers to instantiate the specified optimizer.
@@ -105,32 +120,31 @@ TextRegress Model (
 ```python
 from textregress import TextRegressor
 
-# Instantiate the TextRegressor with non-default parameters for testing:
+# Instantiate the TextRegressor with custom encoder parameters and feature mixing:
 regressor = TextRegressor(
-    encoder_model="sentence-transformers/all-MiniLM-L6-v2",  # Use a generic Hugging Face model
+    encoder_model="tfidf",  # Use the TFIDF encoder
+    encoder_params={"max_features": 1000, "ngram_range": (1, 2)},  # Custom TFIDF parameters
     rnn_type="GRU",                     # Use GRU instead of LSTM
     rnn_layers=2,                       # Use 2 RNN layers
     hidden_size=100,                    # Hidden size set to 100
     bidirectional=False,                # Unidirectional RNN
     inference_layer_units=50,           # Inference layer with 50 units
-    chunk_info=(100, 25),                  # Chunk text into segments of 100 words with an overlap of 25 words
+    chunk_info=(100, 25),               # Chunk text into segments of 100 words with an overlap of 25 words
     padding_value=0,                    # Padding value for chunks
     exogenous_features=["ex1", "ex2"],  # Include two exogenous features
+    feature_mixer=True,                 # Enable feature mixer to combine document embedding with exogenous features
     learning_rate=0.001,                # Learning rate of 0.001
-    loss_function="mae",                # MAE loss
-    max_steps=50,                       # Limit training to 50 steps (for demo purposes)
-    early_stop_enabled=True,            # Enable early stopping
-    patience_steps=5,                   # Early stopping patience of 2 steps
-    val_check_steps=2,                  # Validate every 2 training steps
+    loss_function="mae",                # MAE loss (or a custom callable loss function)
+    encoder_output_dim=1000,            # For TFIDF, this is set to the number of features (e.g., 1000)
     optimizer_name="adam",              # Use Adam optimizer
     cross_attention_enabled=True,       # Enable cross attention between a global token and exogenous features
-    cross_attention_layer=None,         # Use default cross attention layer (nn.MultiheadAttention with 1 head)
-    dropout_rate=0.1,                   # Apply dropout with a rate of 0.1 after each major component
-    se_layer=True                       # Enable the squeeze-and-excitation block
+    cross_attention_layer=None,         # Use default cross attention layer
+    dropout_rate=0.1,                   # Apply dropout with a rate of 0.1
+    se_layer=True,                      # Enable the squeeze-and-excitation block
+    random_seed=42                      # Set a random seed for reproducibility
 )
 
-# Fit the model on the DataFrame.
-# Using a small batch size and reserving 20% of data for validation (for demo purposes).
+# Fit the model on a DataFrame.
 regressor.fit(df, val_size=0.2)
 
 # Predict on the same DataFrame.
@@ -178,8 +192,5 @@ predictions = regressor.predict(df)
 
 - **GPU Auto-Detection**  
   Automatically leverages available GPUs via PyTorch Lightning (using `accelerator="auto"` and `devices="auto"`).
-
-- **Dynamic Embedding Dimension Handling**  
-  The model dynamically detects the encoder’s output dimension (e.g., 384 for `"sentence-transformers/all-MiniLM-L6-v2"`) and configures the RNN input accordingly.
 
 
