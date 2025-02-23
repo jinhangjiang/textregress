@@ -29,27 +29,11 @@ pip install textregress
 
 ## Implementation
 
-TextRegress Model (
-    encoder_model,  
-    encoder_params=None,  
-    rnn_type,  
-    rnn_layers,  
-    hidden_size,  
-    bidirectional,  
-    inference_layer_units,  
-    exogenous_features=None,  
-    feature_mixer=False,  
-    learning_rate: float,  
-    loss_function: Union[str, Callable],  
-    encoder_output_dim: int,  
-    optimizer_name: str,  
-    optimizer_params: dict=None,  
-    cross_attention_enabled: bool=False,  
-    cross_attention_layer: Optional[nn.Module]=None,  
-    dropout_rate: float=0.0,  
-    se_layer: bool=True,  
-    random_seed: int=1
-)
+TextRegress Model (encoder_model, encoder_params=None, rnn_type, rnn_layers, hidden_size, bidirectional,  
+    inference_layer_units, exogenous_features=None, feature_mixer=False, learning_rate: float, 
+    loss_function: Union[str, Callable], encoder_output_dim: int, optimizer_name: str, optimizer_params: dict=None,  
+    cross_attention_enabled: bool=False, cross_attention_layer: Optional[nn.Module]=None, dropout_rate: float=0.0,  
+    se_layer: bool=True, random_seed: int=1)
 
 **Parameters:**
 
