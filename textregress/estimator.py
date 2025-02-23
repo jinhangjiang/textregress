@@ -20,9 +20,14 @@ class TextRegressor:
     column (with optional exogenous feature columns) and processes the text using configurable
     encoding and chunking, then applies a deep learning model (with RNN-based layers) to predict
     the target variable.
+    
+    Additional encoder parameters can be passed via `encoder_params`. Also, the loss_function
+    parameter can be provided as either a string (one of "mae", "mse", "rmse", "smape", "mape", "wmape")
+    or as a custom callable loss function.
     """
     def __init__(self, 
                  encoder_model="sentence-transformers/all-MiniLM-L6-v2",
+                 encoder_params=None,
                  rnn_type="LSTM",
                  rnn_layers=2,
                  hidden_size=512,
@@ -32,7 +37,7 @@ class TextRegressor:
                  padding_value=0,
                  exogenous_features=None,
                  learning_rate=1e-3,
-                 loss_function="mae",
+                 loss_function="mae",  # can be a string or a callable
                  max_steps=500,
                  early_stop_enabled=False,
                  patience_steps=None,
@@ -50,6 +55,7 @@ class TextRegressor:
         
         Args:
             encoder_model (str): Pretrained encoder model identifier.
+            encoder_params (dict, optional): Additional parameters to configure the encoder.
             rnn_type (str): Type of RNN to use ("LSTM" or "GRU").
             rnn_layers (int): Number of RNN layers.
             hidden_size (int): Hidden size for the RNN.
@@ -59,18 +65,19 @@ class TextRegressor:
             padding_value (int, optional): Padding value for text chunks.
             exogenous_features (list, optional): List of additional exogenous feature column names.
             learning_rate (float): Learning rate for the optimizer.
-            loss_function (str): Loss function to use. Options: "mae", "smape", "mse", "rmse", "wmape", "mape".
+            loss_function (str or callable): Loss function to use. If a string, one of "mae", "mse", "rmse",
+                "smape", "mape", "wmape" is supported; if a callable is provided, it will be used directly.
             max_steps (int): Maximum number of training steps. Default is 500.
             early_stop_enabled (bool): Whether to enable early stopping. Default is False.
             patience_steps (int, optional): Number of steps with no improvement before stopping (default: 10 if enabled).
-            val_check_steps (int): Interval for validation checks (default: 50, automatically adjusted if necessary).
-            optimizer_name (str): Name of the optimizer to use (e.g., "adam", "sgd"). Default is "adam".
+            val_check_steps (int): Interval for validation checks.
+            optimizer_name (str): Name of the optimizer to use (e.g., "adam", "sgd").
             optimizer_params (dict): Additional keyword arguments for the optimizer.
             cross_attention_enabled (bool): Whether to enable cross attention between a global token and exogenous features.
             cross_attention_layer (nn.Module, optional): Custom cross attention layer.
-            dropout_rate (float): Dropout rate to apply after each component (default: 0.0).
-            se_layer (bool): Whether to enable the squeeze-and-excitation block (default: True).
-            random_seed (int): Random seed for reproducibility (default: 1).
+            dropout_rate (float): Dropout rate to apply after each component.
+            se_layer (bool): Whether to enable the squeeze-and-excitation block.
+            random_seed (int): Random seed for reproducibility.
             **kwargs: Additional keyword arguments.
         """
         # Set random seed for reproducibility.
@@ -80,6 +87,7 @@ class TextRegressor:
         torch.manual_seed(self.random_seed)
         
         self.encoder_model = encoder_model
+        self.encoder_params = encoder_params if encoder_params is not None else {}
         self.rnn_type = rnn_type
         self.rnn_layers = rnn_layers
         self.hidden_size = hidden_size
@@ -105,7 +113,8 @@ class TextRegressor:
         else:
             self.patience_steps = None
         
-        self.encoder = get_encoder(self.encoder_model)
+        # Instantiate the encoder with custom parameters.
+        self.encoder = get_encoder(self.encoder_model, **self.encoder_params)
         self.model = None
         self.exo_scaler = None
 
@@ -120,7 +129,6 @@ class TextRegressor:
             df (pandas.DataFrame): DataFrame containing 'text' and 'y' columns.
             batch_size (int): Batch size for training. Default is 64.
             val_size (float, optional): Proportion (between 0 and 1) of data to use for validation.
-                Required if early_stop_enabled is True.
             **kwargs: Additional arguments for model training.
             
         Returns:
@@ -133,8 +141,17 @@ class TextRegressor:
         
         texts = df['text'].tolist()
         targets = df['y'].tolist()
-        encoded_sequences = []
         
+        # Fit the encoder if necessary (e.g., for TFIDF).
+        if hasattr(self.encoder, 'fitted') and not self.encoder.fitted:
+            corpus = []
+            for text in texts:
+                chunks = chunk_text(text, self.chunk_info, encoder=self.encoder)
+                chunks = pad_chunks(chunks, padding_value=self.padding_value)
+                corpus.extend(chunks)
+            self.encoder.fit(corpus)
+        
+        encoded_sequences = []
         for text in tqdm(texts, desc="Processing texts"):
             chunks = chunk_text(text, self.chunk_info, encoder=self.encoder)
             chunks = pad_chunks(chunks, padding_value=self.padding_value)
@@ -249,7 +266,6 @@ class TextRegressor:
         
         texts = df['text'].tolist()
         encoded_sequences = []
-        
         for text in tqdm(texts, desc="Processing texts"):
             chunks = chunk_text(text, self.chunk_info, encoder=self.encoder)
             chunks = pad_chunks(chunks, padding_value=self.padding_value)
