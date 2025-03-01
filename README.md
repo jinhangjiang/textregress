@@ -11,6 +11,11 @@ TextRegress is a Python package designed to help researchers perform advanced re
 - Integration of exogenous features through standard normalization and attention mechanisms.
 - An sklearn-like API with `fit`, `predict`, and `fit_predict` methods.
 
+## Citation
+If this package was helpful in your work, feel free to cite it as
+
+- Jiang, Jinhang and Liu, Ben and Peng, Weiyao and Srinivasan, Karthik, TextRegress: A Python Package for Advanced Regression Analysis on Long-Form Text Data (February 23, 2025). Available at SSRN: https://ssrn.com/abstract=5160696
+
 ## Installation
 
 TextRegress requires Python 3.6 or higher. You can install it directly from the repository:
