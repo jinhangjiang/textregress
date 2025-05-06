@@ -14,7 +14,7 @@ TextRegress is a Python package designed to help researchers perform advanced re
 ## Citation
 If this package was helpful in your work, feel free to cite it as
 
-- Jiang, Jinhang and Liu, Ben and Peng, Weiyao and Srinivasan, Karthik, TextRegress: A Python Package for Advanced Regression Analysis on Long-Form Text Data (February 23, 2025). Available at SSRN: https://ssrn.com/abstract=5160696
+- Jiang, Jinhang and Liu, Ben and Peng, Weiyao and Srinivasan, Karthik, TextRegress: A Python package for advanced regression analysis on long-form text data (May 5, 2025). Software Impacts. https://doi.org/10.1016/j.simpa.2025.100760
 
 ## Installation
 
