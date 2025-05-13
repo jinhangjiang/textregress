@@ -16,6 +16,17 @@ If this package was helpful in your work, feel free to cite it as
 
 - Jiang, Jinhang and Liu, Ben and Peng, Weiyao and Srinivasan, Karthik, TextRegress: A Python package for advanced regression analysis on long-form text data (May 5, 2025). Software Impacts. https://doi.org/10.1016/j.simpa.2025.100760
 
+```
+@article{jiang2025textregress,
+  title={TextRegress: A Python package for advanced regression analysis on long-form text data},
+  author={Jiang, Jinhang and Liu, Ben and Peng, Weiyao and Srinivasan, Karthik},
+  journal={Software Impacts},
+  pages={100760},
+  year={2025},
+  publisher={Elsevier}
+}
+```
+
 ## Installation
 
 TextRegress requires Python 3.6 or higher. You can install it directly from the repository:
