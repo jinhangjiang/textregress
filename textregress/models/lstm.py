@@ -94,6 +94,18 @@ class LSTMTextRegressionModel(BaseTextRegressionModel):
             **kwargs
         )
         
+        # Store configuration parameters
+        self.rnn_type = rnn_type
+        self.rnn_layers = rnn_layers
+        self.hidden_size = hidden_size
+        self.bidirectional = bidirectional
+        self.inference_layer_units = inference_layer_units
+        self.exogenous_features = exogenous_features
+        self.cross_attention_enabled = cross_attention_enabled
+        self.dropout_rate = dropout_rate
+        self.se_enabled = se_layer
+        self.feature_mixer = feature_mixer
+        
         # RNN configuration
         rnn_cls = nn.LSTM if rnn_type.upper() == "LSTM" else nn.GRU
         self.rnn = rnn_cls(
@@ -287,18 +299,41 @@ class LSTMTextRegressionModel(BaseTextRegressionModel):
         Args:
             path: File path to save the model
         """
-        torch.save(self.state_dict(), path)
+        # Save both state dict and model configuration
+        save_dict = {
+            'state_dict': self.state_dict(),
+            'model_config': {
+                'rnn_type': self.rnn_type,
+                'rnn_layers': self.rnn_layers,
+                'hidden_size': self.hidden_size,
+                'bidirectional': self.bidirectional,
+                'inference_layer_units': self.inference_layer_units,
+                'exogenous_features': self.exogenous_features,
+                'learning_rate': self.learning_rate,
+                'loss_function': self.loss_function,
+                'encoder_output_dim': self.encoder_output_dim,
+                'optimizer_name': self.optimizer_name,
+                'optimizer_params': self.optimizer_params,
+                'cross_attention_enabled': self.cross_attention_enabled,
+                'dropout_rate': self.dropout_rate,
+                'se_layer': self.se_enabled,
+                'feature_mixer': hasattr(self, 'feature_mixer_layer'),
+                'random_seed': self.random_seed
+            }
+        }
+        torch.save(save_dict, path)
 
     @classmethod
-    def load(cls, path: str, **kwargs):
+    def load(cls, path: str):
         """
         Load a model from a file.
         Args:
             path: File path to load the model from
-            **kwargs: Model initialization parameters
         Returns:
             model: Loaded model instance
         """
-        model = cls(**kwargs)
-        model.load_state_dict(torch.load(path, map_location='cpu'))
+        save_dict = torch.load(path, map_location='cpu')
+        model_config = save_dict['model_config']
+        model = cls(**model_config)
+        model.load_state_dict(save_dict['state_dict'])
         return model 

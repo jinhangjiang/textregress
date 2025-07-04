@@ -45,11 +45,17 @@ class BaseTextRegressionModel(pl.LightningModule, ABC):
         # Set random seed for reproducibility
         torch.manual_seed(random_seed)
         
-        # Initialize loss function
-        self.criterion = get_loss_function(loss_function)
+        # Store configuration parameters
+        self.encoder_output_dim = encoder_output_dim
+        self.loss_function = loss_function
         self.learning_rate = learning_rate
         self.optimizer_name = optimizer_name
         self.optimizer_params = optimizer_params or {}
+        self.random_seed = random_seed
+        
+        # Initialize loss function
+        loss_cls = get_loss_function(loss_function)
+        self.criterion = loss_cls()
     
     @abstractmethod
     def forward(self, x: torch.Tensor, exogenous: Optional[torch.Tensor] = None) -> torch.Tensor:
@@ -116,68 +122,80 @@ class BaseTextRegressionModel(pl.LightningModule, ABC):
         """
         return integrated_gradients(self, x, exogenous, baseline, steps)
     
-    def training_step(self, batch: Union[tuple, torch.Tensor], batch_idx: int) -> torch.Tensor:
+    def training_step(self, batch: Union[tuple, dict], batch_idx: int) -> torch.Tensor:
         """
         Training step.
         
         Args:
-            batch: Either (x, y) or (x, exogenous, y) depending on whether exogenous features are used.
+            batch: Either (x, y), (x, exogenous, y), or dict with keys 'x', 'y', 'exogenous'.
             batch_idx: Index of the current batch.
             
         Returns:
             torch.Tensor: Loss value.
         """
-        if len(batch) == 3:
+        if isinstance(batch, dict):
+            x = batch['x']
+            y = batch['y']
+            exogenous = batch.get('exogenous', None)
+        elif len(batch) == 3:
             x, exogenous, y = batch
-            y_hat = self(x, exogenous)
         else:
             x, y = batch
-            y_hat = self(x)
+            exogenous = None
         
-        loss = self.criterion(pred=y_hat.squeeze(), target=y.float())
+        y_hat = self(x, exogenous)
+        loss = self.criterion(y_hat.squeeze(), y.float())
         self.log('train_loss', loss)
         return loss
     
-    def validation_step(self, batch: Union[tuple, torch.Tensor], batch_idx: int) -> torch.Tensor:
+    def validation_step(self, batch: Union[tuple, dict], batch_idx: int) -> torch.Tensor:
         """
         Validation step.
         
         Args:
-            batch: Either (x, y) or (x, exogenous, y) depending on whether exogenous features are used.
+            batch: Either (x, y), (x, exogenous, y), or dict with keys 'x', 'y', 'exogenous'.
             batch_idx: Index of the current batch.
             
         Returns:
             torch.Tensor: Loss value.
         """
-        if len(batch) == 3:
+        if isinstance(batch, dict):
+            x = batch['x']
+            y = batch['y']
+            exogenous = batch.get('exogenous', None)
+        elif len(batch) == 3:
             x, exogenous, y = batch
-            y_hat = self(x, exogenous)
         else:
             x, y = batch
-            y_hat = self(x)
+            exogenous = None
         
-        loss = self.criterion(pred=y_hat.squeeze(), target=y.float())
+        y_hat = self(x, exogenous)
+        loss = self.criterion(y_hat.squeeze(), y.float())
         self.log('val_loss', loss, prog_bar=True)
         return loss
     
-    def predict_step(self, batch: Union[tuple, torch.Tensor], batch_idx: int, dataloader_idx: int = 0) -> torch.Tensor:
+    def predict_step(self, batch: Union[tuple, dict], batch_idx: int, dataloader_idx: int = 0) -> torch.Tensor:
         """
         Prediction step.
         
         Args:
-            batch: Either (x, _) or (x, exogenous, _) depending on whether exogenous features are used.
+            batch: Either (x, _), (x, exogenous, _), or dict with keys 'x', 'y', 'exogenous'.
             batch_idx: Index of the current batch.
             dataloader_idx: Index of the current dataloader.
             
         Returns:
             torch.Tensor: Model predictions.
         """
-        if len(batch) == 3:
+        if isinstance(batch, dict):
+            x = batch['x']
+            exogenous = batch.get('exogenous', None)
+        elif len(batch) == 3:
             x, exogenous, _ = batch
-            y_hat = self(x, exogenous)
         else:
             x, _ = batch
-            y_hat = self(x)
+            exogenous = None
+        
+        y_hat = self(x, exogenous)
         return y_hat.squeeze()
     
     def configure_optimizers(self) -> torch.optim.Optimizer:
