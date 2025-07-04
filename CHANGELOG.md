@@ -2,6 +2,38 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.2.0] - 2025-07-04
+
+### Added
+- **Modular Architecture:** Complete restructuring of the codebase into modular packages:
+  - `models/`: Centralized model implementations with registry system
+  - `encoders/`: Text encoder implementations with registry system  
+  - `losses/`: Loss function implementations with registry system
+  - `utils/`: Utility functions for text processing, datasets, and explainability
+- **New Model Implementation:** Added GRU model with full parity to LSTM model, including cross-attention and feature mixing capabilities
+- **Model Registry System:** Implemented `@register_model` decorator and `get_model()` function for easy model discovery and instantiation
+- **Embedding Extraction:** All models now support `get_document_embedding()` and `get_sequence_embeddings()` methods for transfer learning
+- **Explainability Features:** Lightweight explainability utilities including:
+  - Gradient-based feature importance (saliency)
+  - Integrated gradients for both text and exogenous features
+  - Attention weight extraction for cross-attention models
+- **Model Persistence:** Added `save()` and `load()` methods to all models with full PyTorch parameter exposure
+- **Enhanced API:** Added `fit_predict()` method to all models for convenient training and prediction
+- **Mock Encoder:** Added fallback encoder for testing environments without sentence-transformers dependency
+- **Comprehensive Testing:** Added extensive test suite for all new features and modular components
+
+### Changed
+- **Package Structure:** Reorganized from single-file modules to modular package structure for better maintainability
+- **Import System:** Updated all `__init__.py` files to provide clean, discoverable API surface
+- **Estimator Integration:** Fixed import issues and updated estimator to work with new modular structure
+- **CI/CD Improvements:** Enhanced GitHub Actions workflows for better testing and deployment automation
+
+### Fixed
+- **Import Errors:** Resolved critical import issues in estimator (`.encoding` → `.encoders`)
+- **Function Signatures:** Fixed `chunk_text` function signature mismatches in estimator
+- **Registry System:** Ensured all models, encoders, and losses are properly registered and discoverable
+- **API Consistency:** Standardized method signatures across all model implementations
+
 ## [v1.1.1] - 2025-02-22
 
 ### Added

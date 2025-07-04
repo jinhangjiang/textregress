@@ -1,0 +1,132 @@
+name: Test Package
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test-package:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.8, 3.9, "3.10", "3.11"]
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-cov
+    
+    - name: Test package import
+      run: |
+        python -c "import textregress; print('Package import successful')"
+        python -c "from textregress import TextRegressor; print('TextRegressor import successful')"
+        python -c "from textregress.models import LSTMTextRegressionModel, GRUTextRegressionModel; print('Models import successful')"
+        python -c "from textregress.encoders import MockEncoder; print('Encoders import successful')"
+        python -c "from textregress.losses import MAELoss, MSELoss; print('Losses import successful')"
+    
+    - name: Test registry functions
+      run: |
+        python -c "
+        from textregress.models import list_available_models, get_model
+        from textregress.encoders import list_available_encoders, get_encoder
+        from textregress.losses import list_available_losses, get_loss_function
+        
+        models = list_available_models()
+        encoders = list_available_encoders()
+        losses = list_available_losses()
+        
+        print(f'Available models: {models}')
+        print(f'Available encoders: {encoders}')
+        print(f'Available losses: {losses}')
+        
+        # Test getting components
+        lstm_model = get_model('lstm')
+        mock_encoder = get_encoder('mock-encoder')
+        mae_loss = get_loss_function('mae')
+        
+        print('All registry functions work correctly')
+        "
+    
+    - name: Test model functionality
+      run: |
+        python -c "
+        import torch
+        from textregress.models import LSTMTextRegressionModel
+        
+        # Create model
+        model = LSTMTextRegressionModel(
+            encoder_output_dim=384,
+            learning_rate=1e-3,
+            loss_function='mae'
+        )
+        
+        # Test forward pass
+        x = torch.randn(2, 3, 384)
+        output = model(x)
+        print(f'Model forward pass successful: {output.shape}')
+        
+        # Test embedding extraction
+        doc_emb = model.get_document_embedding(x)
+        seq_emb = model.get_sequence_embeddings(x)
+        print(f'Embedding extraction successful: doc={doc_emb.shape}, seq={seq_emb.shape}')
+        
+        print('All model functionality works correctly')
+        "
+    
+    - name: Test utility functions
+      run: |
+        python -c "
+        from textregress.utils import chunk_text, pad_chunks
+        
+        # Test text chunking
+        text = 'This is a test text that should be chunked.'
+        chunks = chunk_text(text, max_length=10, overlap=2)
+        print(f'Text chunking successful: {len(chunks)} chunks')
+        
+        # Test padding
+        padded_chunks = pad_chunks(chunks, max_length=15, pad_token=' ')
+        print(f'Padding successful: {len(padded_chunks)} padded chunks')
+        
+        print('All utility functions work correctly')
+        "
+    
+    - name: Test explainability features
+      run: |
+        python -c "
+        import torch
+        from textregress.models import LSTMTextRegressionModel
+        from textregress.utils import get_gradient_importance, integrated_gradients
+        
+        # Create model
+        model = LSTMTextRegressionModel(
+            encoder_output_dim=384,
+            learning_rate=1e-3,
+            loss_function='mae',
+            exogenous_features=['feature1', 'feature2']
+        )
+        
+        # Test data
+        x = torch.randn(2, 3, 384)
+        exogenous = torch.randn(2, 2)
+        
+        # Test gradient importance
+        grad_importance = get_gradient_importance(model, x, exogenous)
+        print(f'Gradient importance successful: {list(grad_importance.keys())}')
+        
+        # Test integrated gradients
+        ig_importance = integrated_gradients(model, x, exogenous, steps=5)
+        print(f'Integrated gradients successful: {list(ig_importance.keys())}')
+        
+        print('All explainability features work correctly')
+        " 
