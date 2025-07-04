@@ -1,15 +1,21 @@
 [![PyPI](https://img.shields.io/pypi/v/textregress)](https://pypi.org/project/textregress/)
 [![Downloads](https://pepy.tech/badge/textregress)](https://pepy.tech/project/textregress)
+[![CI](https://github.com/jinhangjiang/textregress/workflows/CI/badge.svg)](https://github.com/jinhangjiang/textregress/actions)
+[![Test](https://github.com/jinhangjiang/textregress/workflows/Test%20Package/badge.svg)](https://github.com/jinhangjiang/textregress/actions)
 
 
-# TextRegress
+# TextRegress v1.2.0
 
 TextRegress is a Python package designed to help researchers perform advanced regression analysis on text data. It provides a unified deep learning framework to handle long-text data and supports:
-- Configurable text encoding using SentenceTransformer or custom methods (e.g., TFIDF). Or, any pretrained Hugging Face models. 
-- Automatic text chunking for long documents.
-- A deep learning backend based on PyTorch Lightning with RNN (LSTM/GRU) layers.
-- Integration of exogenous features through standard normalization and attention mechanisms.
-- An sklearn-like API with `fit`, `predict`, and `fit_predict` methods.
+- **Modular Architecture**: Clean, extensible package structure with registry systems for models, encoders, and losses
+- **Multiple Model Types**: LSTM and GRU models with full feature parity including cross-attention and feature mixing
+- **Configurable text encoding** using SentenceTransformer, TFIDF, or any pretrained Hugging Face models
+- **Automatic text chunking** for long documents
+- **Deep learning backend** based on PyTorch Lightning with RNN layers
+- **Integration of exogenous features** through normalization and attention mechanisms
+- **Explainability features** including gradient-based importance and integrated gradients
+- **Model persistence** with save/load functionality
+- **Sklearn-like API** with `fit`, `predict`, and `fit_predict` methods
 
 ## Citation
 If this package was helpful in your work, feel free to cite it as
@@ -29,18 +35,51 @@ If this package was helpful in your work, feel free to cite it as
 
 ## Installation
 
-TextRegress requires Python 3.6 or higher. You can install it directly from the repository:
+TextRegress requires Python 3.6 or higher. You can install it directly from PyPI:
 
 ```bash
-git clone https://github.com/yourusername/TextRegress.git
-cd TextRegress
+pip install textregress
+```
+
+Or install from the repository:
+
+```bash
+git clone https://github.com/jinhangjiang/textregress.git
+cd textregress
 pip install -e .
 ```
 
-You may also install it through pypi:
+## Quick Start
 
 ```python
-pip install textregress
+import pandas as pd
+from textregress import TextRegressor
+
+# Create sample data
+data = {
+    'text': [
+        "This is a positive review about the product.",
+        "The quality is excellent and I recommend it.",
+        "Not satisfied with the purchase.",
+        "Great value for money."
+    ],
+    'y': [4.5, 4.8, 2.1, 4.2],
+    'feature1': [1.0, 1.2, 0.8, 1.1],
+    'feature2': [0.5, 0.6, 0.3, 0.7]
+}
+df = pd.DataFrame(data)
+
+# Create and train the model
+regressor = TextRegressor(
+    model_name="lstm",  # or "gru"
+    encoder_model="sentence-transformers/all-MiniLM-L6-v2",
+    exogenous_features=["feature1", "feature2"],
+    max_steps=100
+)
+
+# Fit and predict
+predictions = regressor.fit_predict(df)
+print(f"Predictions: {predictions}")
 ```
 
 ## Implementation
@@ -150,6 +189,15 @@ regressor.fit(df, val_size=0.2)
 # Predict on the same DataFrame.
 predictions = regressor.predict(df)
 ```
+
+## New in v1.2.0
+
+- **🔄 Modular Architecture**: Complete restructuring into modular packages (`models/`, `encoders/`, `losses/`, `utils/`) with registry systems
+- **🧠 GRU Model**: New GRU implementation with full parity to LSTM including cross-attention and feature mixing
+- **🔍 Explainability**: Lightweight explainability features including gradient-based importance and integrated gradients
+- **💾 Model Persistence**: Save and load models with full PyTorch parameter exposure
+- **📊 Embedding Extraction**: Extract document and sequence embeddings for transfer learning
+- **⚡ Enhanced API**: Improved registry system and cleaner import structure
 
 ## Features
 
