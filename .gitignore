@@ -75,6 +75,10 @@ venv.bak/
 textregress.egg-info/
 PYPI_SETUP.md
 
+# PyTorch Lightning logs
+lightning_logs/
+*.ckpt
+
 # Example outputs
 examples/*.out
 examples/*.log
