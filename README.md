@@ -4,7 +4,7 @@
 [![Test](https://github.com/jinhangjiang/textregress/workflows/Test%20Package/badge.svg)](https://github.com/jinhangjiang/textregress/actions)
 
 
-# TextRegress v1.2.0
+# TextRegress v1.2.3
 
 TextRegress is a Python package designed to help researchers perform advanced regression analysis on text data. It provides a unified deep learning framework to handle long-text data and supports:
 - **Modular Architecture**: Clean, extensible package structure with registry systems for models, encoders, and losses
@@ -35,10 +35,10 @@ If this package was helpful in your work, feel free to cite it as
 
 ## Installation
 
-TextRegress requires Python 3.6 or higher. You can install it directly from PyPI:
+**Note:** Version 1.2.3 includes TF-IDF encoder and fixes all packaging issues. Required for correct import of `TextRegressor` and all submodules.
 
 ```bash
-pip install textregress
+pip install textregress==1.2.3
 ```
 
 Or install from the repository:
@@ -105,7 +105,7 @@ TextRegress Model (encoder_model, encoder_params=None, rnn_type, rnn_layers, hid
   The number of stacked RNN layers in the model. More layers can capture higher-order temporal features but may require more data and computation.
 
 - **hidden_size**: *int*  
-  The number of hidden units in each RNN layer. This parameter defines the dimensionality of the hidden state and directly influences the model’s capacity.
+  The number of hidden units in each RNN layer. This parameter defines the dimensionality of the hidden state and directly influences the model's capacity.
 
 - **bidirectional**: *bool*  
   When set to `True`, the RNN operates in a bidirectional manner, processing the sequence in both forward and backward directions. This effectively doubles the output dimension of the RNN.
@@ -132,13 +132,13 @@ TextRegress Model (encoder_model, encoder_params=None, rnn_type, rnn_layers, hid
   The dimensionality of the vector output from the encoder module. This value is used to configure the input size of the RNN. For instance, when using a TFIDF encoder, this is automatically set based on the size of the fitted vocabulary.
 
 - **optimizer_name**: *str*  
-  The name of the optimizer to be used (e.g., `"adam"`, `"sgd"`, etc.). The model dynamically searches within PyTorch’s optimizers to instantiate the specified optimizer.
+  The name of the optimizer to be used (e.g., `"adam"`, `"sgd"`, etc.). The model dynamically searches within PyTorch's optimizers to instantiate the specified optimizer.
 
 - **optimizer_params**: *dict*  
   A dictionary containing additional keyword parameters to pass to the optimizer upon instantiation (for example, momentum for SGD).
 
 - **cross_attention_enabled**: *bool*  
-  A flag indicating whether to enable a cross-attention mechanism. When `True`, the model generates a global token (by averaging the RNN outputs) and uses it as the query to attend over the projected exogenous features. The output of this attention is concatenated with the RNN’s last time-step output before further processing.
+  A flag indicating whether to enable a cross-attention mechanism. When `True`, the model generates a global token (by averaging the RNN outputs) and uses it as the query to attend over the projected exogenous features. The output of this attention is concatenated with the RNN's last time-step output before further processing.
 
 - **cross_attention_layer**: *Optional[nn.Module]*  
   An optional custom cross-attention layer. If not provided and cross attention is enabled, a default single-head MultiheadAttention layer (from `nn.MultiheadAttention`) is used.
@@ -190,7 +190,7 @@ regressor.fit(df, val_size=0.2)
 predictions = regressor.predict(df)
 ```
 
-## New in v1.2.0
+## New in v1.2.3
 
 - **🔄 Modular Architecture**: Complete restructuring into modular packages (`models/`, `encoders/`, `losses/`, `utils/`) with registry systems
 - **🧠 GRU Model**: New GRU implementation with full parity to LSTM including cross-attention and feature mixing

@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.3] - 2024-07-05
+### Added
+- Updated version to 1.2.3 for consistency across all package files.
+- Improved version management and packaging consistency.
+
+### Fixed
+- Ensured all version references are consistent across setup.py, pyproject.toml, and __init__.py files.
+
+## [1.2.2] - 2024-07-05
+### Added
+- Added `__version__` attribute to package for version checking.
+- Added TF-IDF encoder implementation with proper chunk-level processing.
+- Improved encoder registration system with better error handling.
+
+### Fixed
+- Fixed encoder registration to use proper encoder type names.
+- Updated TextRegressor to handle encoder model names correctly.
+- Simplified dependency requirements to avoid compatibility issues.
+- TF-IDF encoder now properly implements "TF-IDF of chunks" workflow.
+
+### Changed
+- Relaxed dependency version constraints for better compatibility.
+- Improved error messages for missing encoders.
+
+## [1.2.1] - 2024-07-04
+### Fixed
+- Packaging now includes all submodules (`encoders`, `models`, `losses`, `utils`).
+- Fixes `ModuleNotFoundError` for `textregress.encoders` and similar imports.
+- Required for correct import of `TextRegressor` and all submodules from PyPI.
+
 ## [v1.2.0] - 2025-07-04
 
 ### Added
@@ -72,7 +102,7 @@ All notable changes to this project will be documented in this file.
   The `configure_optimizers` method now dynamically searches through `torch.optim` to support any optimizer available in PyTorch. Users can now specify the optimizer by name (e.g., "adam", "sgd", etc.) along with custom optimizer parameters without modifying the source code.
   
 - **Random Seed Parameter:**  
-  A new `random_seed` parameter (default: 1) has been added to both the estimator and model. This parameter sets the seed for Python’s `random` module, NumPy, and PyTorch to ensure reproducibility across runs.
+  A new `random_seed` parameter (default: 1) has been added to both the estimator and model. This parameter sets the seed for Python's `random` module, NumPy, and PyTorch to ensure reproducibility across runs.
 
 - **Dropout Layers:**  
   Dropout layers have been integrated after every major component of the model (after the RNN output, global token generation, inference layers, and SE block) to improve generalization. Users can control the dropout rate using the `dropout_rate` parameter (default: 0.0).
@@ -81,7 +111,7 @@ All notable changes to this project will be documented in this file.
   An optional cross-attention mechanism has been added to enhance the integration of exogenous features. When enabled via `cross_attention_enabled`, the model:
   - Generates a global token by averaging RNN outputs.
   - Projects exogenous features and applies cross attention between the global token and these features.
-  - Concatenates the cross-attention output with the RNN’s final output before the inference layer.
+  - Concatenates the cross-attention output with the RNN's final output before the inference layer.
   
   Users can also provide a custom cross-attention layer using `cross_attention_layer`.
 
@@ -136,7 +166,7 @@ Version 1.1.0 of TextRegress introduces significant enhancements that empower us
   The training configuration automatically leverages GPUs if available (using `accelerator="auto"` and `devices="auto"`).
 
 - **Dynamic Embedding Dimension Handling:**  
-  The model dynamically detects the encoder’s output dimension (e.g., 384 for `"sentence-transformers/all-MiniLM-L6-v2"`) and configures the RNN input size accordingly.
+  The model dynamically detects the encoder's output dimension (e.g., 384 for `"sentence-transformers/all-MiniLM-L6-v2"`) and configures the RNN input size accordingly.
 
 - **Improved Chunking Functionality:**  
   The `chunk_text` function has been updated to yield only full chunks, ensuring consistent input sizes.
@@ -149,8 +179,4 @@ Version 1.1.0 of TextRegress introduces significant enhancements that empower us
   The default batch size has been updated to 64.
   
 - **Interface Simplification:**  
-  The estimator’s interface has been updated to use a single DataFrame input instead of separate `X` and `y` parameters.
-
----
-
-This initial release (Version 1.0.0) is designed with modularity and maintainability in mind, making it easy to extend and update in the future.
+  The estimator's interface has been updated to use a single DataFrame input instead of separate `

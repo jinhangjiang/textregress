@@ -11,7 +11,7 @@ from .base import BaseEncoder
 from .registry import register_encoder
 
 
-@register_encoder("sentence-transformers/all-MiniLM-L6-v2")
+@register_encoder("sentence_transformer")
 class SentenceTransformerEncoder(BaseEncoder):
     """
     Sentence Transformer encoder using the sentence-transformers library.

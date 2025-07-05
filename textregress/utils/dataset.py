@@ -7,119 +7,61 @@ This module contains classes and functions for handling text regression datasets
 from typing import Dict, List, Optional, Tuple, Union
 import torch
 from torch.utils.data import Dataset, DataLoader
+from torch.nn.utils.rnn import pad_sequence
 
 
-class TextRegressionDataset(Dataset):
+class TextRegressionDataset(torch.utils.data.Dataset):
     """
-    Dataset for text regression tasks.
+    Dataset for text regression.
     
-    This dataset handles pre-encoded text sequences and corresponding regression targets,
-    with optional support for exogenous features.
+    Each sample is a sequence of encoded chunks and a target value.
+    Optionally includes exogenous features.
     """
-    
-    def __init__(
-        self,
-        encoded_sequences: List[List[torch.Tensor]],
-        targets: List[float],
-        exogenous: Optional[List[List[float]]] = None
-    ):
+    def __init__(self, encoded_sequences, targets, exogenous=None):
         """
-        Initialize the dataset.
-        
         Args:
-            encoded_sequences: List of lists of encoded text tensors (each inner list represents chunks)
-            targets: List of target values
-            exogenous: List of exogenous feature lists (optional)
+            encoded_sequences (list of list of torch.Tensor): Each inner list contains encoded chunks for a text sample.
+            targets (list or array-like): Target values.
+            exogenous (list, optional): List of exogenous feature vectors.
         """
         self.encoded_sequences = encoded_sequences
-        self.targets = torch.tensor(targets, dtype=torch.float32)
+        self.targets = list(targets)
         self.exogenous = exogenous
-        
-        if exogenous is not None:
-            self.exogenous_tensor = torch.tensor(exogenous, dtype=torch.float32)
-        else:
-            self.exogenous_tensor = None
-    
-    def __len__(self) -> int:
-        """Get the number of samples in the dataset."""
+
+    def __len__(self):
         return len(self.encoded_sequences)
-    
-    def __getitem__(self, idx: int) -> Dict[str, torch.Tensor]:
-        """
-        Get a single sample from the dataset.
-        
-        Args:
-            idx: Index of the sample to get
-            
-        Returns:
-            Dictionary containing encoded sequences, target, and optional exogenous features
-        """
-        # Get the encoded sequences for this sample
-        sequences = self.encoded_sequences[idx]
-        
-        # Stack the sequences into a single tensor
-        # Each sequence is a tensor of shape (seq_len, features)
-        # We stack them to get (num_chunks, seq_len, features)
-        x = torch.stack(sequences)
-        
-        # Get target
-        y = self.targets[idx]
-        
-        # Prepare output
-        output = {
-            'x': x,
-            'y': y
-        }
-        
-        # Add exogenous features if present
-        if self.exogenous_tensor is not None:
-            output['exogenous'] = self.exogenous_tensor[idx]
-            
-        return output
 
+    def __getitem__(self, idx):
+        if self.exogenous is not None:
+            return self.encoded_sequences[idx], self.exogenous[idx], self.targets[idx]
+        else:
+            return self.encoded_sequences[idx], self.targets[idx]
 
-def collate_fn(batch: List[Dict[str, torch.Tensor]]) -> Dict[str, torch.Tensor]:
+def collate_fn(batch):
     """
-    Collate function for DataLoader.
+    Custom collate function to pad sequences of encoded chunks.
     
     Args:
-        batch: List of samples from the dataset
-        
+        batch (list): List of samples, each sample is either (encoded_sequence, target) or (encoded_sequence, exogenous, target).
+    
     Returns:
-        Dictionary of batched tensors
+        Tuple: Padded sequences, (exogenous features if available), and targets.
     """
-    # Get all keys from the first sample
-    keys = batch[0].keys()
+    # Check if exogenous features are provided.
+    if len(batch[0]) == 3:
+        sequences, exogenous, targets = zip(*batch)
+    else:
+        sequences, targets = zip(*batch)
+        exogenous = None
     
-    # Initialize output dictionary
-    output = {}
+    # Each item in sequences is a list of torch.Tensor; pad them along the sequence dimension.
+    sequence_tensors = [torch.stack(seq) for seq in sequences]  # shape: (num_chunks, feature_dim)
+    padded_sequences = pad_sequence(sequence_tensors, batch_first=True)  # shape: (batch_size, max_chunks, feature_dim)
     
-    # Process each key
-    for key in keys:
-        if key == 'x':
-            # For sequences, we need to handle variable lengths
-            # Pad sequences to the same length within the batch
-            max_chunks = max(item[key].shape[0] for item in batch)
-            max_seq_len = max(item[key].shape[1] for item in batch)
-            
-            # Check if we have a feature dimension
-            if len(batch[0][key].shape) > 2:
-                feature_dim = batch[0][key].shape[2]
-                padded_sequences = torch.zeros(len(batch), max_chunks, max_seq_len, feature_dim)
-            else:
-                # Handle 2D tensors (no feature dimension)
-                padded_sequences = torch.zeros(len(batch), max_chunks, max_seq_len)
-            
-            for i, item in enumerate(batch):
-                seq = item[key]
-                if len(seq.shape) > 2:
-                    padded_sequences[i, :seq.shape[0], :seq.shape[1], :] = seq
-                else:
-                    padded_sequences[i, :seq.shape[0], :seq.shape[1]] = seq
-            
-            output[key] = padded_sequences
-        else:
-            # Stack other tensors (e.g., targets, exogenous features)
-            output[key] = torch.stack([item[key] for item in batch])
-            
-    return output 
+    targets = torch.tensor(targets, dtype=torch.float32)
+    
+    if exogenous is not None:
+        exogenous = torch.tensor(exogenous, dtype=torch.float32)
+        return padded_sequences, exogenous, targets
+    else:
+        return padded_sequences, targets 

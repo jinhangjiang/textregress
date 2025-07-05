@@ -23,10 +23,6 @@ class TextRegressor:
     This estimator takes in a pandas DataFrame containing a 'text' column and a 'y'
     column (with optional exogenous feature columns) and processes the text using configurable
     encoding and chunking, then applies a deep learning model to predict the target variable.
-    
-    Additional encoder parameters can be passed via `encoder_params`. Also, the loss_function
-    parameter can be provided as either a string (one of "mae", "mse", "rmse", "smape", "mape", "wmape")
-    or as a custom callable loss function.
     """
     def __init__(self, 
                  model_name: str = "lstm",
@@ -44,6 +40,16 @@ class TextRegressor:
                  optimizer_name: str = "adam",
                  optimizer_params: dict = None,
                  random_seed: int = 1,
+                 # Model hyperparameters
+                 rnn_layers: int = 2,
+                 hidden_size: int = 512,
+                 bidirectional: bool = True,
+                 inference_layer_units: int = 100,
+                 cross_attention_enabled: bool = False,
+                 cross_attention_layer: object = None,
+                 dropout_rate: float = 0.0,
+                 se_layer: bool = True,
+                 feature_mixer: bool = False,
                  **model_params):
         """
         Initialize the TextRegressor.
@@ -64,6 +70,15 @@ class TextRegressor:
             optimizer_name (str): Name of the optimizer to use.
             optimizer_params (dict): Additional keyword arguments for the optimizer.
             random_seed (int): Random seed for reproducibility.
+            rnn_layers (int): Number of RNN layers.
+            hidden_size (int): Hidden size for the RNN.
+            bidirectional (bool): Whether to use bidirectional RNN.
+            inference_layer_units (int): Number of units in the final inference layer.
+            cross_attention_enabled (bool): Whether to enable cross attention.
+            cross_attention_layer (object): Custom cross attention layer.
+            dropout_rate (float): Dropout rate to apply.
+            se_layer (bool): Whether to enable the squeeze-and-excitation block.
+            feature_mixer (bool): Whether to use feature mixing for exogenous features.
             **model_params: Additional model-specific parameters.
         """
         # Set random seed for reproducibility
@@ -74,7 +89,18 @@ class TextRegressor:
         
         # Model configuration
         self.model_name = model_name
-        self.model_params = model_params
+        self.model_params = dict(
+            rnn_layers=rnn_layers,
+            hidden_size=hidden_size,
+            bidirectional=bidirectional,
+            inference_layer_units=inference_layer_units,
+            cross_attention_enabled=cross_attention_enabled,
+            cross_attention_layer=cross_attention_layer,
+            dropout_rate=dropout_rate,
+            se_layer=se_layer,
+            feature_mixer=feature_mixer,
+            **model_params
+        )
         
         # Encoder configuration
         self.encoder_model = encoder_model
@@ -100,7 +126,20 @@ class TextRegressor:
             self.patience_steps = None
         
         # Initialize components
-        self.encoder = get_encoder(self.encoder_model, **self.encoder_params)
+        # Determine encoder type from model name
+        if self.encoder_model.startswith("sentence-transformers/"):
+            encoder_type = "sentence_transformer"
+        elif self.encoder_model == "tfidf":
+            encoder_type = "tfidf"
+        else:
+            encoder_type = "sentence_transformer"  # Default fallback
+        
+        # Pass the model name as a parameter to the encoder (only for sentence transformers)
+        encoder_params = self.encoder_params.copy() if self.encoder_params else {}
+        if encoder_type == "sentence_transformer":
+            encoder_params['model_name'] = self.encoder_model
+        
+        self.encoder = get_encoder(encoder_type, **encoder_params)
         self.model = None
         self.exo_scaler = None
 
@@ -128,25 +167,28 @@ class TextRegressor:
         # Fit the encoder if necessary
         if hasattr(self.encoder, 'fitted') and not self.encoder.fitted:
             corpus = []
-            for text in texts:
+            for i, text in enumerate(texts):
                 if self.chunk_info:
                     max_length, overlap = self.chunk_info
                     chunks = chunk_text(text, max_length, overlap)
                 else:
                     chunks = [text]
-                chunks = pad_chunks(chunks, max_length if self.chunk_info else len(text), pad_token=" ")
+                chunks = pad_chunks(chunks, self.padding_value)
                 corpus.extend(chunks)
+            
+            # For TF-IDF, we fit on all chunks to learn vocabulary and IDF
+            # For other encoders, this might be a no-op or minimal setup
             self.encoder.fit(corpus)
         
         # Process texts
         encoded_sequences = []
-        for text in tqdm(texts, desc="Processing texts"):
+        for i, text in enumerate(tqdm(texts, desc="Processing texts")):
             if self.chunk_info:
                 max_length, overlap = self.chunk_info
                 chunks = chunk_text(text, max_length, overlap)
             else:
                 chunks = [text]
-            chunks = pad_chunks(chunks, max_length if self.chunk_info else len(text), pad_token=" ")
+            chunks = pad_chunks(chunks, self.padding_value)
             encoded_chunks = [self.encoder.encode(chunk) for chunk in chunks]
             encoded_chunks = [chunk if isinstance(chunk, torch.Tensor) else torch.tensor(chunk)
                             for chunk in encoded_chunks]
@@ -236,7 +278,6 @@ class TextRegressor:
             trainer.fit(self.model, train_dataloaders=train_loader, val_dataloaders=val_loader)
         else:
             trainer.fit(self.model, train_dataloaders=train_loader)
-        
         return self
 
     def predict(self, df: pd.DataFrame, batch_size: int = 64, **kwargs) -> np.ndarray:
@@ -266,7 +307,7 @@ class TextRegressor:
                 chunks = chunk_text(text, max_length, overlap)
             else:
                 chunks = [text]
-            chunks = pad_chunks(chunks, max_length if self.chunk_info else len(text), pad_token=" ")
+            chunks = pad_chunks(chunks, self.padding_value)
             encoded_chunks = [self.encoder.encode(chunk) for chunk in chunks]
             encoded_chunks = [chunk if isinstance(chunk, torch.Tensor) else torch.tensor(chunk)
                             for chunk in encoded_chunks]

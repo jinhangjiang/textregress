@@ -4,6 +4,8 @@ TextRegress Package
 A Python package for performing linear regression analysis on text data.
 """
 
+__version__ = "1.2.3"
+
 from .estimator import TextRegressor
 
 # Import main components for easy access
@@ -32,10 +34,7 @@ from .utils import (
     chunk_text,
     pad_chunks,
     TextRegressionDataset,
-    collate_fn,
-    get_gradient_importance,
-    get_attention_weights,
-    integrated_gradients
+    collate_fn
 )
 
 __all__ = [
@@ -64,8 +63,5 @@ __all__ = [
     "chunk_text",
     "pad_chunks",
     "TextRegressionDataset",
-    "collate_fn",
-    "get_gradient_importance",
-    "get_attention_weights",
-    "integrated_gradients"
+    "collate_fn"
 ]

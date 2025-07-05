@@ -10,41 +10,62 @@ import numpy as np
 
 def chunk_text(text: str, max_length: int, overlap: int = 0) -> List[str]:
     """
-    Split text into overlapping chunks of maximum length.
-
+    Splits the text into chunks.
+    
+    If max_length is provided, the text is split into overlapping chunks.
+    Only full chunks (i.e. with exactly max_length words) are returned.
+    If the text is shorter than max_length, the entire text is returned as a single chunk.
+    Otherwise, the entire text is returned as a single chunk.
+    
     Args:
-        text: Input text to split
-        max_length: Maximum length of each chunk
-        overlap: Number of characters to overlap between chunks
-
+        text (str): The input text.
+        max_length (int): Maximum number of words per chunk.
+        overlap (int): Number of words to overlap between chunks.
+        
     Returns:
-        List of text chunks
+        List[str]: List of text chunks.
     """
     if not text:
         return []
     
-    chunks = []
-    start = 0
-    text_length = len(text)
-    
-    while start < text_length:
-        end = min(start + max_length, text_length)
-        chunks.append(text[start:end])
-        start = end - overlap if overlap > 0 else end
+    if max_length:
+        words = text.split()
         
-    return chunks
+        # If text is shorter than max_length, return the entire text
+        if len(words) <= max_length:
+            return [text]
+        
+        chunks = []
+        i = 0
+        
+        # Safety check to prevent infinite loop
+        if overlap >= max_length:
+            overlap = max_length - 1
+        
+        while i + max_length <= len(words):
+            chunk = " ".join(words[i:i+max_length])
+            chunks.append(chunk)
+            i += max(max_length - overlap, 1)
+            
+            # Additional safety check to prevent infinite loop
+            if i >= len(words):
+                break
+                
+        return chunks
+    else:
+        return [text]
 
 
-def pad_chunks(chunks: List[str], max_length: int, pad_token: str = " ") -> List[str]:
+def pad_chunks(chunks: List[str], padding_value: int = 0) -> List[str]:
     """
-    Pad text chunks to a maximum length.
-
+    Placeholder for padding chunks if necessary.
+    Currently, this returns the chunks as-is.
+    
     Args:
-        chunks: List of text chunks
-        max_length: Maximum length to pad to
-        pad_token: Token to use for padding
-
+        chunks (list of str): List of text chunks.
+        padding_value (int): Padding value.
+        
     Returns:
-        List of padded text chunks
+        List[str]: Padded chunks.
     """
-    return [chunk + pad_token * (max_length - len(chunk)) for chunk in chunks] 
+    return chunks 
