@@ -4,7 +4,7 @@
 [![Test](https://github.com/jinhangjiang/textregress/workflows/Test%20Package/badge.svg)](https://github.com/jinhangjiang/textregress/actions)
 
 
-# TextRegress v1.2.3
+# TextRegress v1.3.0
 
 TextRegress is a Python package designed to help researchers perform advanced regression analysis on text data. It provides a unified deep learning framework to handle long-text data and supports:
 - **Modular Architecture**: Clean, extensible package structure with registry systems for models, encoders, and losses
@@ -35,10 +35,10 @@ If this package was helpful in your work, feel free to cite it as
 
 ## Installation
 
-**Note:** Version 1.2.3 includes TF-IDF encoder and fixes all packaging issues. Required for correct import of `TextRegressor` and all submodules.
+**Note:** Version 1.3.0 includes comprehensive feature importance analysis, robust device handling, and enhanced explainability. Use `get_feature_importance()` for model interpretability and `device` argument for GPU/CPU control.
 
 ```bash
-pip install textregress==1.2.3
+pip install textregress==1.3.0
 ```
 
 Or install from the repository:
@@ -80,6 +80,29 @@ regressor = TextRegressor(
 # Fit and predict
 predictions = regressor.fit_predict(df)
 print(f"Predictions: {predictions}")
+
+# Device handling (optional)
+print(f"Current device: {regressor.get_device()}")
+regressor.set_device("cuda")  # Move to GPU if available
+regressor.set_device("cpu")   # Move back to CPU
+
+# Get feature importance for explainability
+importance = regressor.get_feature_importance()
+print(f"Text importance shape: {importance['text_importance'].shape}")
+if 'exogenous_importance' in importance:
+    print(f"Exogenous importance shape: {importance['exogenous_importance'].shape}")
+
+# Analyze with different modes
+gradient_importance = regressor.get_feature_importance(mode="gradient")
+attention_importance = regressor.get_feature_importance(mode="attention")  # Requires cross-attention
+
+# Analyze custom data
+custom_data = pd.DataFrame({
+    'text': ["New text to analyze"],
+    'feature1': [1.5],
+    'feature2': [0.8]
+})
+custom_importance = regressor.get_feature_importance(df=custom_data)
 ```
 
 ## Implementation
@@ -190,14 +213,16 @@ regressor.fit(df, val_size=0.2)
 predictions = regressor.predict(df)
 ```
 
-## New in v1.2.3
+## New in v1.3.0
 
-- **🔄 Modular Architecture**: Complete restructuring into modular packages (`models/`, `encoders/`, `losses/`, `utils/`) with registry systems
-- **🧠 GRU Model**: New GRU implementation with full parity to LSTM including cross-attention and feature mixing
-- **🔍 Explainability**: Lightweight explainability features including gradient-based importance and integrated gradients
+- **🎯 Comprehensive Feature Importance**: Advanced `get_feature_importance()` method with gradient-based and attention-based analysis
+- **🖥️ Robust Device Handling**: Automatic CPU/GPU alignment with manual override via `device` argument and `set_device()` method
+- **🔍 Enhanced Explainability**: Support for both text and exogenous feature importance analysis
+- **🧪 Extensive Testing**: Comprehensive test suite covering all feature importance functionality
+- **🔄 Modular Architecture**: Complete modular packages (`models/`, `encoders/`, `losses/`, `utils/`) with registry systems
+- **🧠 GRU Model**: Full parity with LSTM including cross-attention and feature mixing
 - **💾 Model Persistence**: Save and load models with full PyTorch parameter exposure
 - **📊 Embedding Extraction**: Extract document and sequence embeddings for transfer learning
-- **⚡ Enhanced API**: Improved registry system and cleaner import structure
 
 ## Features
 
@@ -240,5 +265,14 @@ predictions = regressor.predict(df)
 
 - **GPU Auto-Detection**  
   Automatically leverages available GPUs via PyTorch Lightning (using `accelerator="auto"` and `devices="auto"`).
+
+- **Feature Importance Analysis**  
+  Comprehensive explainability with the `get_feature_importance()` method:
+  - **Gradient-based importance**: Default mode for analyzing feature contributions using saliency maps
+  - **Attention weights**: For models with cross-attention (requires exogenous features)
+  - **Flexible data**: Analyze training data or new data with custom DataFrames
+  - **Clean output**: Returns numpy arrays ready for visualization and analysis
+  - **Device handling**: Automatic CPU/GPU alignment with state preservation
+  - **Multiple modes**: Support for both "gradient" and "attention" analysis modes
 
 

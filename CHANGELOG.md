@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0] - 2024-07-05
+### Added
+- Comprehensive feature importance analysis with `get_feature_importance()` method
+- Support for both gradient-based and attention-based importance analysis
+- Robust device (CPU/GPU) handling with automatic alignment and manual override
+- `device` argument in TextRegressor, and `set_device()`/`get_device()` methods
+- Extensive test suite covering all feature importance functionality
+- Enhanced documentation with detailed usage examples
+- All fit, predict, and explainability methods now always work on the correct device
+- State preservation during feature importance computation (training/eval mode)
+
 ## [1.2.3] - 2024-07-05
 ### Added
 - Updated version to 1.2.3 for consistency across all package files.
@@ -180,3 +191,4 @@ Version 1.1.0 of TextRegress introduces significant enhancements that empower us
   
 - **Interface Simplification:**  
   The estimator's interface has been updated to use a single DataFrame input instead of separate `
+
