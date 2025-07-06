@@ -16,9 +16,16 @@ except ImportError:
     # Fallback to mock encoder if sentence-transformers is not available
     from .mock import MockEncoder as SentenceTransformerEncoder
 
+try:
+    from .tfidf import TfidfEncoder
+except ImportError:
+    # Fallback to mock encoder if scikit-learn is not available
+    from .mock import MockEncoder as TfidfEncoder
+
 __all__ = [
     'BaseEncoder',
     'SentenceTransformerEncoder',
+    'TfidfEncoder',
     'MockEncoder',
     'register_encoder',
     'get_encoder',

@@ -9,7 +9,7 @@ from typing import Optional, Dict, Any, List, Union, Tuple
 import torch
 import pytorch_lightning as pl
 from ..losses import get_loss_function
-from ..utils.explainability import get_gradient_importance, get_attention_weights, integrated_gradients
+from ..utils.explainability import get_gradient_importance, get_attention_weights
 
 class BaseTextRegressionModel(pl.LightningModule, ABC):
     """
@@ -116,11 +116,7 @@ class BaseTextRegressionModel(pl.LightningModule, ABC):
         """
         return get_attention_weights(self, x, exogenous)
     
-    def integrated_gradients(self, x: torch.Tensor, exogenous: Optional[torch.Tensor] = None, baseline: Optional[torch.Tensor] = None, steps: int = 20) -> Dict[str, torch.Tensor]:
-        """
-        Compute integrated gradients for input text and exogenous features.
-        """
-        return integrated_gradients(self, x, exogenous, baseline, steps)
+
     
     def training_step(self, batch: Union[tuple, dict], batch_idx: int) -> torch.Tensor:
         """

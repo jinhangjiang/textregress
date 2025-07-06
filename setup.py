@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="textregress",
-    version="1.2.0",
+    version="1.3.0",
     description="A package for performing advanced regression on text data using unified deep learning framework.",
     author="Jinhang Jiang, Ben Liu, Weiyao Peng, Karthik Srinivasan",
     author_email="jinhang@asu.edu",
