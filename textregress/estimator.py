@@ -3,6 +3,8 @@ Text regression estimator following an sklearn-like API.
 """
 
 import math
+import pickle
+from pathlib import Path
 import pandas as pd
 from tqdm import tqdm
 import torch
@@ -158,7 +160,7 @@ class TextRegressor:
         
         # Device configuration
         self.device = self._setup_device(device)
-        
+
         # Model configuration
         self.model_name = model_name
         self.model_params = dict(
@@ -199,12 +201,8 @@ class TextRegressor:
         
         # Initialize components
         # Determine encoder type from model name
-        if self.encoder_model.startswith("sentence-transformers/"):
-            encoder_type = "sentence_transformer"
-        elif self.encoder_model == "tfidf":
-            encoder_type = "tfidf"
-        else:
-            encoder_type = "sentence_transformer"  # Default fallback
+        encoder_type = self._resolve_encoder_type(self.encoder_model)
+        self.encoder_type = encoder_type
         
         # Pass the model name as a parameter to the encoder (only for sentence transformers)
         encoder_params = self.encoder_params.copy() if self.encoder_params else {}
@@ -214,6 +212,14 @@ class TextRegressor:
         self.encoder = get_encoder(encoder_type, **encoder_params)
         self.model = None
         self.exo_scaler = None
+
+    @staticmethod
+    def _resolve_encoder_type(encoder_model: str) -> str:
+        if encoder_model.startswith("sentence-transformers/"):
+            return "sentence_transformer"
+        if encoder_model == "tfidf":
+            return "tfidf"
+        return "sentence_transformer"
 
     def _setup_device(self, device: str) -> torch.device:
         """
@@ -226,6 +232,30 @@ class TextRegressor:
             torch.device: The configured device
         """
         return _setup_device(device)
+
+    def _get_encoder_output_dim(self) -> int:
+        if self.model is not None and hasattr(self.model, "encoder_output_dim"):
+            return self.model.encoder_output_dim
+        if hasattr(self.encoder, "model") and hasattr(self.encoder.model, "get_sentence_embedding_dimension"):
+            return self.encoder.model.get_sentence_embedding_dimension()
+        if hasattr(self.encoder, "output_dim"):
+            return self.encoder.output_dim
+        return 768
+
+    def _build_model(self, encoder_output_dim: int = None):
+        model_cls = get_model(self.model_name)
+        self.model = model_cls(
+            encoder_output_dim=encoder_output_dim or self._get_encoder_output_dim(),
+            learning_rate=self.learning_rate,
+            loss_function=self.loss_function,
+            optimizer_name=self.optimizer_name,
+            optimizer_params=self.optimizer_params,
+            exogenous_features=self.exogenous_features,
+            random_seed=self.random_seed,
+            **self.model_params
+        )
+        _ensure_model_on_device(self.model, self.device)
+        return self.model
 
     def fit(self, df: pd.DataFrame, batch_size: int = 64, val_size: float = None, **kwargs) -> 'TextRegressor':
         """
@@ -311,29 +341,8 @@ class TextRegressor:
         steps_per_epoch = len(train_loader)
         computed_epochs = math.ceil(self.max_steps / steps_per_epoch)
         
-        # Get encoder output dimension
-        if hasattr(self.encoder, 'model') and hasattr(self.encoder.model, 'get_sentence_embedding_dimension'):
-            encoder_output_dim = self.encoder.model.get_sentence_embedding_dimension()
-        elif hasattr(self.encoder, 'output_dim'):
-            encoder_output_dim = self.encoder.output_dim
-        else:
-            encoder_output_dim = 768
-        
         # Initialize model
-        model_cls = get_model(self.model_name)
-        self.model = model_cls(
-            encoder_output_dim=encoder_output_dim,
-            learning_rate=self.learning_rate,
-            loss_function=self.loss_function,
-            optimizer_name=self.optimizer_name,
-            optimizer_params=self.optimizer_params,
-            exogenous_features=self.exogenous_features,
-            random_seed=self.random_seed,
-            **self.model_params
-        )
-        
-        # Ensure model is on the correct device
-        _ensure_model_on_device(self.model, self.device)
+        self._build_model(self._get_encoder_output_dim())
         
         # Configure callbacks
         callbacks = []
@@ -438,6 +447,82 @@ class TextRegressor:
             np.ndarray: Predicted values.
         """
         return self.fit(df, **kwargs).predict(df, **kwargs)
+
+    def save(self, path) -> Path:
+        """
+        Save the fitted estimator to a pickle file.
+
+        Args:
+            path: File path where the estimator should be saved.
+
+        Returns:
+            pathlib.Path: The saved pickle file path.
+        """
+        if self.model is None:
+            raise ValueError("Model must be fitted before saving")
+
+        save_path = Path(path)
+        payload = {
+            "estimator_config": {
+                "model_name": self.model_name,
+                "encoder_model": self.encoder_model,
+                "encoder_params": self.encoder_params,
+                "chunk_info": self.chunk_info,
+                "padding_value": self.padding_value,
+                "exogenous_features": self.exogenous_features,
+                "learning_rate": self.learning_rate,
+                "loss_function": self.loss_function,
+                "max_steps": self.max_steps,
+                "early_stop_enabled": self.early_stop_enabled,
+                "patience_steps": self.patience_steps,
+                "val_check_steps": self.val_check_steps,
+                "optimizer_name": self.optimizer_name,
+                "optimizer_params": self.optimizer_params,
+                "random_seed": self.random_seed,
+                "device": str(self.device),
+                **self.model_params,
+            },
+            "encoder": self.encoder,
+            "encoder_output_dim": self._get_encoder_output_dim(),
+            "model_state_dict": {
+                key: value.detach().cpu()
+                for key, value in self.model.state_dict().items()
+            },
+            "exo_scaler": self.exo_scaler,
+        }
+
+        save_path.parent.mkdir(parents=True, exist_ok=True)
+        with save_path.open("wb") as file_obj:
+            pickle.dump(payload, file_obj)
+        return save_path
+
+    @classmethod
+    def load(cls, path, device: str = None) -> "TextRegressor":
+        """
+        Load a previously saved estimator pickle file.
+
+        Args:
+            path: File path to the saved estimator.
+            device (str, optional): Override device for the loaded model.
+
+        Returns:
+            TextRegressor: Loaded estimator instance.
+        """
+        with Path(path).open("rb") as file_obj:
+            payload = pickle.load(file_obj)
+
+        estimator_config = payload["estimator_config"]
+        if device is not None:
+            estimator_config = dict(estimator_config, device=device)
+
+        estimator = cls(**estimator_config)
+        estimator.encoder = payload["encoder"]
+        estimator.exo_scaler = payload.get("exo_scaler")
+        estimator._build_model(payload.get("encoder_output_dim"))
+        estimator.model.load_state_dict(payload["model_state_dict"])
+        estimator.model.eval()
+        _ensure_model_on_device(estimator.model, estimator.device)
+        return estimator
 
     def get_feature_importance(self, df: pd.DataFrame = None, mode: str = "gradient") -> dict:
         """

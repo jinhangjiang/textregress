@@ -1,7 +1,7 @@
 [![PyPI](https://img.shields.io/pypi/v/textregress)](https://pypi.org/project/textregress/)
 [![Downloads](https://pepy.tech/badge/textregress)](https://pepy.tech/project/textregress)
-[![CI](https://github.com/jinhangjiang/textregress/workflows/CI/badge.svg)](https://github.com/jinhangjiang/textregress/actions)
-[![Test](https://github.com/jinhangjiang/textregress/workflows/Test%20Package/badge.svg)](https://github.com/jinhangjiang/textregress/actions)
+[![CI](https://github.com/jinhangjiang/textregress/actions/workflows/ci.yml/badge.svg)](https://github.com/jinhangjiang/textregress/actions/workflows/ci.yml)
+[![Test](https://github.com/jinhangjiang/textregress/actions/workflows/test.yml/badge.svg)](https://github.com/jinhangjiang/textregress/actions/workflows/test.yml)
 
 
 # TextRegress v1.3.0
@@ -103,6 +103,12 @@ custom_data = pd.DataFrame({
     'feature2': [0.8]
 })
 custom_importance = regressor.get_feature_importance(df=custom_data)
+
+# Save and load a trained model
+regressor.save("textregress_model.pkl")
+loaded_regressor = TextRegressor.load("textregress_model.pkl", device="cpu")
+loaded_predictions = loaded_regressor.predict(custom_data)
+print(f"Loaded model predictions: {loaded_predictions}")
 ```
 
 ## Implementation

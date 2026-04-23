@@ -32,6 +32,9 @@ from .losses import (
 
 from .utils import (
     chunk_text,
+    get_attention_weights,
+    get_gradient_importance,
+    integrated_gradients,
     pad_chunks,
     TextRegressionDataset,
     collate_fn
@@ -61,6 +64,9 @@ __all__ = [
     
     # Utils
     "chunk_text",
+    "get_attention_weights",
+    "get_gradient_importance",
+    "integrated_gradients",
     "pad_chunks",
     "TextRegressionDataset",
     "collate_fn"
