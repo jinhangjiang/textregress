@@ -4,7 +4,7 @@
 [![Test](https://github.com/jinhangjiang/textregress/actions/workflows/test.yml/badge.svg)](https://github.com/jinhangjiang/textregress/actions/workflows/test.yml)
 
 
-# TextRegress v1.3.0
+# TextRegress v1.4.0
 
 TextRegress is a Python package designed to help researchers perform advanced regression analysis on text data. It provides a unified deep learning framework to handle long-text data and supports:
 - **Modular Architecture**: Clean, extensible package structure with registry systems for models, encoders, and losses
@@ -35,10 +35,10 @@ If this package was helpful in your work, feel free to cite it as
 
 ## Installation
 
-**Note:** Version 1.3.0 includes comprehensive feature importance analysis, robust device handling, and enhanced explainability. Use `get_feature_importance()` for model interpretability and `device` argument for GPU/CPU control.
+**Note:** Version 1.4.0 includes estimator save/load support, comprehensive feature importance analysis, robust device handling, and enhanced explainability. Use `get_feature_importance()` for model interpretability and `device` argument for GPU/CPU control.
 
 ```bash
-pip install textregress==1.3.0
+pip install textregress==1.4.0
 ```
 
 Or install from the repository:
@@ -219,7 +219,7 @@ regressor.fit(df, val_size=0.2)
 predictions = regressor.predict(df)
 ```
 
-## New in v1.3.0
+## New in v1.4.0
 
 - **🎯 Comprehensive Feature Importance**: Advanced `get_feature_importance()` method with gradient-based and attention-based analysis
 - **🖥️ Robust Device Handling**: Automatic CPU/GPU alignment with manual override via `device` argument and `set_device()` method

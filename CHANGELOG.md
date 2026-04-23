@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.0] - 2026-04-22
+### Added
+- Public estimator persistence via `TextRegressor.save()` and `TextRegressor.load()` using pickle files.
+- Integrated gradients exported through the public utility API.
+- README examples for saving and loading trained models.
+
+### Changed
+- Updated package metadata, documentation, and tests to version `1.4.0`.
+- Simplified CI and package validation workflows to align with the supported Python matrix.
+
+### Fixed
+- Restored missing public exports for explainability helpers and `MockEncoder`.
+- Reworked the test suite to match the current package API and workflow expectations.
+
 ## [1.3.0] - 2024-07-05
 ### Added
 - Comprehensive feature importance analysis with `get_feature_importance()` method

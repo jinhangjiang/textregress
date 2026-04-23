@@ -192,4 +192,4 @@ def test_estimator_save_and_load_round_trip(tmp_path: Path, monkeypatch: pytest.
 
 def test_version():
     assert hasattr(textregress, "__version__")
-    assert textregress.__version__ == "1.3.0"
+    assert textregress.__version__ == "1.4.0"

@@ -4,7 +4,7 @@ TextRegress Package
 A Python package for performing linear regression analysis on text data.
 """
 
-__version__ = "1.3.0"
+__version__ = "1.4.0"
 
 from .estimator import TextRegressor
 
