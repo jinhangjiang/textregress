@@ -7,6 +7,7 @@ using the get_encoder function.
 """
 
 from .base import BaseEncoder
+from .mock import MockEncoder
 from .registry import register_encoder, get_encoder, list_available_encoders
 
 # Import all encoder implementations to ensure they're registered
